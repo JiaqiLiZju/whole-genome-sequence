@@ -1,0 +1,82 @@
+
+## Download and install BWA
+
+cd ~/biosoft
+
+mkdir bwa &&  cd bwa
+
+#http://sourceforge.net/projects/bio-bwa/files/
+
+wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2
+
+tar xvfj bwa-0.7.15.tar.bz2 # x extracts, v is verbose (details of what it is doing), f skips prompting for each individual file, and j tells it to unzip .bz2 files
+
+cd bwa-0.7.15
+
+make
+
+## Download and install samtools
+
+## http://samtools.sourceforge.net/
+
+## http://www.htslib.org/doc/samtools.html
+
+cd ~/biosoft
+
+mkdir samtools &&  cd samtools
+
+wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2
+
+tar xvfj samtools-1.3.1.tar.bz2
+
+cd samtools-1.3.1
+
+#需要先指定prefix，才能make install
+./configure --prefix=/mnt/d/ubuntu/WGR_workstation/software/samtools/samtools-1.3.1/samtools-1.3.1-bin/
+
+make
+
+make install
+
+#test测试是否安装成功
+~/prefix/bin/samtools --help
+
+~/prefix/bin/plot-bamstats --help
+
+cd htslib-1.3.1
+
+./configure --prefix=/mnt/d/ubuntu/WGR_workstation/software/samtools/samtools-1.3.1/samtools-1.3.1-bin/
+
+make
+
+make install
+
+#test测试是否安装成功
+~/prefix/bin/tabix
+
+
+## Download and install picardtools
+
+## https://sourceforge.net/projects/picard/
+
+## https://github.com/broadinstitute/picard
+
+cd ~/biosoft
+
+mkdir picardtools &&  cd picardtools
+
+wget https://github.com/broadinstitute/picard/zipball/master/picard-2.18.15.zip
+
+unzip picard-tools-1.119.zip
+
+mkdir 2.9.2 && cd 2.9.2
+
+wget https://github.com/broadinstitute/picard/releases/download/2.9.2/picard.jar
+
+##download GATK-3.8
+#https://github.com/broadgsa/gatk-protected/archive/3.8-1.tar.gz
+
+mkdir GATK-3.8 &&  cd GATK-3.8
+wget https://github.com/broadgsa/gatk-protected/archive/3.8-1.tar.gz
+
+tar -xvfj gatk-protected-3.8-1.tar.gz
