@@ -26,7 +26,7 @@ thread_num=8
 time $bwa index $reference && echo -e "\n\nbwa index done\n\n"
 time $samtools faidx $reference && echo -e "\n\nsamtools index done\n\n"
 time $samtools dict \
-	-R $reference -O ${refrence}.dict \
+	-R $reference -o ${refrence}.dict \
 	&& echo -e "\n\ngatk dict done\n\n"
 
 #prepare for human variation

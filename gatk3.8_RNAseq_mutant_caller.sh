@@ -2,6 +2,7 @@
 ##software path
 picard=/home/ggj/jiaqiLi/whole_genome_seq/software/GenomeAnalysisTK-3.8-1/picard.jar
 gatk=/home/ggj/jiaqiLi/whole_genome_seq/software/GenomeAnalysisTK-3.8-1/GenomeAnalysisTK.jar
+snpeff=/home/ggj/jiaqiLi/whole_genome_seq/software/snpEff/snpEff.jar
 ##reference
 reference=/home/ggj/jiaqiLi/bulk-RNA-seq/tea_proj/workspace/reference/tea_genome.fa
 ref_vcf=/home/ggj/jiaqiLi/bulk-RNA-seq/tea_proj/workspace/reference/tea_variation.vcf
@@ -55,3 +56,6 @@ java -jar $gatk \
 	-filterName FS -filter "FS > 30.0" \
 	-filterName QD -filter "QD < 2.0" \
 	-o dedup_realign_BQSR_filtered.vcf
+
+java -Xmx4G -jar $snpeff T001 -i vcf \
+	$out_dir/${speice_name}_${i}_mutect2.vcf.gz > $out_dir/${speice_name}_${i}_mutect2.snpeff.vcf \
