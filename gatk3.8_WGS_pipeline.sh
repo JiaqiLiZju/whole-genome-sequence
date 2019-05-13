@@ -129,7 +129,7 @@ time java -jar $gatk -T HaplotypeCaller \
 time java -jar $gatk \
 	-T VariantFiltration \
 	-R $reference \
-	-V $out_dir/gatk/dedup_realign_BQSR.vcf \
+	-V $out_dir/gatk/$speice_name.dedup_realign_BQSR.vcf \
 	-window 35 \
 	-cluster 3 \
 	-filterName FS -filter "FS > 30.0" \
@@ -138,4 +138,4 @@ time java -jar $gatk \
 
 #annotate snv
 time java -jar $snpeff GRCh38.92 -i vcf \
-	$out_dir/gatk/$speice_name.dedup_realign_BQSR_filtered.vcf > $out_dir/gatk/$speice_name.filter.anpeff.vcf.gz
+	$out_dir/gatk/$speice_name.dedup_realign_BQSR_filtered.vcf > $out_dir/gatk/$speice_name.filter.snpeff.vcf.gz
