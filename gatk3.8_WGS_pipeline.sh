@@ -1,4 +1,10 @@
-#!/bin/bash
+#BSUB -q normal
+#BSUB -J JiaqiLi
+#BSUB -o %J.out
+#BSUB -e %J.err
+#BSUB -R "span[ptile=16]"
+#BSUB -n 96
+
 ###set parameter
 fq1=/share/home/guoguoji/RAWDATA/AML-genome-seq/Merged-lane/H_R1.fastq
 fq2=/share/home/guoguoji/RAWDATA/AML-genome-seq/Merged-lane/H_R2.fastq
@@ -7,15 +13,16 @@ speice_name=AML
 ###set env
 out_dir=out
 ##define software path/jar file
+fastqc=/share/home/guoguoji/tools/Biology-tools-package/FastQC/FastQC/fastqc
 trimmomatic=/share/home/guoguoji/tools/Biology-tools-package/trimmomatic/Trimmomatic-0.38/trimmomatic-0.38.jar
 bwa=/share/home/guoguoji/tools/Biology-tools-package/bwa/bwa-0.7.15/bwa
 samtools=/share/apps/samtools/1.8/bin/samtools
-picard=/share/home/guoguoji/tools/picard-tools-1.119/picard-1.119.jar
+picard=/share/home/guoguoji/tools/picard-tools-1.119/MarkDuplicates.jar
 gatk=/share/home/guoguoji/tools/Biology-tools-package/gatk/GenomeAnalysisTK-3.8-1/GenomeAnalysisTK.jar
 snpeff=/share/home/guoguoji/Desktop/callsnptools/snpEff/snpEff.jar
 #ref_file
 reference=/share/home/guoguoji/tools/BWA_Reference_Human/Homo_sapiens.GRCh38.fa
-knownSites1=/share/home/guoguoji/Desktop/callsnptools/human_reference/Mills_and_1000G_gold_standard.indels.hg38.vcf
+#knownSites1=/share/home/guoguoji/Desktop/callsnptools/human_reference/Mills_and_1000G_gold_standard.indels.hg38.vcf
 knownSites2=/share/home/guoguoji/Desktop/callsnptools/human_reference/dbsnp_138.hg38.vcf.gz
 #chromosome=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 )
 #sequence information
@@ -24,18 +31,11 @@ RGID=L005
 thread_num=8
 
 ###prepare ref index
-#time $bwa index $reference && echo -e "\n\nbwa index done\n\n"
-#time $samtools faidx $reference && echo -e "\n\nsamtools index done\n\n"
-#time $samtools dict \
-#	$reference -o ${refrence}.dict \
-#	&& echo -e "\n\ngatk dict done\n\n"
-
-#prepare for human variation
-#$gatk IndexFeatureFile --Feature-file $GATK_bundle/hapmap_3.3.hg38.vcf
-#$gatk IndexFeatureFile --Feature-file $GATK_bundle/1000G_omni2.5.hg38.vcf
-#$gatk IndexFeatureFile --Feature-file $GATK_bundle/1000G_phase1.snps.high_confidence.hg38.vcf
-#$gatk IndexFeatureFile --Feature-file $GATK_bundle/Mills_and_1000G_gold_standard.indels.hg38.vcf
-#$gatk IndexFeatureFile --Feature-file $GATK_bundle/dbsnp_146.hg38.vcf
+time $bwa index $reference && echo -e "\n\nbwa index done\n\n"
+time $samtools faidx $reference && echo -e "\n\nsamtools index done\n\n"
+time $samtools dict \
+	$reference -o ${refrence}.dict \
+	&& echo -e "\n\ngatk dict done\n\n"
 
 ###work flow
 ##mkdir
@@ -49,7 +49,7 @@ if [ ! -d "$out_dir/cleanfq"  ]; then
     mkdir $out_dir/cleanfq
 fi
 #fastqc of original fq
-#time fastqc $fq1 $fq2 -o $out_dir
+time fastqc $fq1 $fq2 -o $out_dir
 
 #trimmomatic set as illumina
 #put the adapter file in the work dir&&change the shell
@@ -62,7 +62,7 @@ time java -jar ${trimmomatic} PE -phred33 -trimlog log_trim \
 	&& echo -e "\n\ntrimmomatic done\n\n"
 
 #fastqc of trimmed fq
-time fastqc $out_dir/cleanfq/$speice_name.pair.1.fq $out_dir/cleanfq/$speice_name.pair.2.fq -o $out_dir/cleanfq \
+time $fastqc $out_dir/cleanfq/$speice_name.pair.1.fq $out_dir/cleanfq/$speice_name.pair.2.fq -o $out_dir/cleanfq \
 	&& echo -e "\n\nquality control done\n\n"
 
 ##bwa align with reference and sort to bam file
@@ -79,7 +79,7 @@ time $samtools sort -@ $thread_num -m 8G -O bam -o $out_dir/bwa/$speice_name.sor
 	&& echo -e "\n\nbwa sort done\n\n"
 	
 #mark duplicate
-time java -jar ${picard} MarkDuplicates \
+time java -jar ${picard} \
 	I=$out_dir/bwa/$speice_name.sorted.bam O=$out_dir/bwa/$speice_name.sorted.markdup.bam \
 	M=$out_dir/bwa/$speice_name.sorted.markdup_metrics.txt \
 	CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT \
@@ -90,15 +90,11 @@ time $samtools index $out_dir/bwa/$speice_name.sorted.markdup.bam && echo -e "\n
 ##apply realiagnment
 time java -jar $gatk -T RealignerTargetCreator \
 	-R $reference \
-	-known $knownSites1 \
-	-known $knownSites2 \
 	-I $out_dir/bwa/$speice_name.sorted.markdup.bam \
 	-o $out_dir/bwa/realign_interval.list && echo -e "\n\nrealignment done\n\n"
 
-time java -jar $gatk -T IndelRealigner \
+#time java -jar $gatk -T IndelRealigner \
 	-R $reference \
-	-known $knownSites1 \
-	-known $knownSites2 \
 	-targetIntervals $out_dir/bwa/realign_interval.list \
 	-I $out_dir/bwa/$speice_name.sorted.markdup.bam \
 	-o $out_dir/bwa/$speice_name.sorted.markdup.realign.bam \
@@ -107,39 +103,39 @@ time java -jar $gatk -T IndelRealigner \
 ##BQSR
 time java -jar $gatk -T BaseRecalibrator \
 	-R $reference \
-	-known $knownSites1 \
-	-known $knownSites2 \
+	--knownSites $knownSites2 \
 	-I $out_dir/bwa/$speice_name.sorted.markdup.realign.bam -o $out_dir/bwa/recal_data.table \
 	&& echo -e "\n\nrecal done\n\n"
 
-time java -jar $gatk -T PrintReads \
+#time java -jar $gatk -T PrintReads \
 	-R $reference \
 	-BQSR $out_dir/bwa/recal_data.table \
 	-I $out_dir/bwa/$speice_name.sorted.markdup.realign.bam -o $out_dir/bwa/$speice_name.sorted.markdup.realign.BQSR.bam \
 	&& echo -e "\n\nBQSR done\n\n"
 
 ##gatk single hard sort
-if [! -d "$out_dir/gatk_single_hard" ]; then
-	mkdir $out_dir/gatk_single_hard
+if [ ! -d "$out_dir/gatk" ]; then
+	mkdir $out_dir/gatk
 fi
 
 time java -jar $gatk -T HaplotypeCaller \
 	-R $reference \
 	--dbsnp $knownSites2 \
-	-I dedup_split.bam \
+	-I $out_dir/bwa/$speice_name.sorted.markdup.realign.BQSR.bam \
 	-dontUseSoftClippedBases \
 	-stand_call_conf 20.0 \
-	-o dedup_realign_BQSR.vcf
+	-o $out_dir/gatk/$speice_name.dedup_realign_BQSR.vcf
+	
 time java -jar $gatk \
 	-T VariantFiltration \
 	-R $reference \
-	-V dedup_realign_BQSR.vcf \
+	-V $out_dir/gatk/dedup_realign_BQSR.vcf \
 	-window 35 \
 	-cluster 3 \
 	-filterName FS -filter "FS > 30.0" \
 	-filterName QD -filter "QD < 2.0" \
-	-o dedup_realign_BQSR_filtered.vcf
+	-o $out_dir/gatk/$speice_name.dedup_realign_BQSR_filtered.vcf
 
 #annotate snv
 time java -jar $snpeff GRCh38.92 -i vcf \
-	$out_dir/gatk_single_hard/${specie}.filter.vcf.gz > $out_dir/gatk_single_hard/${specie}.filter.anpeff.vcf.gz
+	$out_dir/gatk/$speice_name.dedup_realign_BQSR_filtered.vcf > $out_dir/gatk/$speice_name.filter.anpeff.vcf.gz
